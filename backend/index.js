@@ -38,6 +38,47 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
+// Seed endpoint (one-time use to populate database)
+app.post('/api/seed', async (req, res) => {
+  try {
+    const bcrypt = require('bcryptjs');
+    const User = require('./models/user');
+    const Asset = require('./models/asset');
+
+    const userCount = await User.countDocuments();
+    if (userCount > 0) {
+      return res.json({ message: 'Database already seeded' });
+    }
+
+    const users = [
+      { username: 'admin', password: await bcrypt.hash('admin123', 10), role: 'Admin', base: '' },
+      { username: 'commander_alpha', password: await bcrypt.hash('commander123', 10), role: 'Base Commander', base: 'Base Alpha' },
+      { username: 'commander_bravo', password: await bcrypt.hash('commander123', 10), role: 'Base Commander', base: 'Base Bravo' },
+      { username: 'logistics_alpha', password: await bcrypt.hash('logistics123', 10), role: 'Logistics Officer', base: 'Base Alpha' },
+      { username: 'logistics_bravo', password: await bcrypt.hash('logistics123', 10), role: 'Logistics Officer', base: 'Base Bravo' }
+    ];
+    await User.insertMany(users);
+
+    const assets = [
+      { assetName: 'M1 Abrams Tank', type: 'Vehicle', quantity: 10, base: 'Base Alpha', status: 'Available' },
+      { assetName: 'Humvee', type: 'Vehicle', quantity: 25, base: 'Base Alpha', status: 'Available' },
+      { assetName: 'M16 Rifle', type: 'Weapon', quantity: 200, base: 'Base Alpha', status: 'Available' },
+      { assetName: '5.56mm Rounds', type: 'Ammunition', quantity: 50000, base: 'Base Alpha', status: 'Available' },
+      { assetName: 'Night Vision Goggles', type: 'Equipment', quantity: 50, base: 'Base Alpha', status: 'Available' },
+      { assetName: 'Bradley IFV', type: 'Vehicle', quantity: 8, base: 'Base Bravo', status: 'Available' },
+      { assetName: 'Humvee', type: 'Vehicle', quantity: 15, base: 'Base Bravo', status: 'Available' },
+      { assetName: 'M4 Carbine', type: 'Weapon', quantity: 150, base: 'Base Bravo', status: 'Available' },
+      { assetName: '7.62mm Rounds', type: 'Ammunition', quantity: 30000, base: 'Base Bravo', status: 'Available' },
+      { assetName: 'Body Armor', type: 'Equipment', quantity: 100, base: 'Base Bravo', status: 'Available' }
+    ];
+    await Asset.insertMany(assets);
+
+    res.json({ message: 'Database seeded successfully' });
+  } catch (err) {
+    res.status(500).json({ message: 'Seed failed', error: err.message });
+  }
+});
+
 // Connect to MongoDB and start server
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/military-assets';
 const PORT = process.env.PORT || 5002;
